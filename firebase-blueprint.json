@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and balance",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "balance": { "type": "number", "description": "Current balance in some denomination" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "balance", "createdAt", "updatedAt"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Denotes if a user is an admin",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "grantedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "grantedAt"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "A tool or service that can be purchased/used",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number", "description": "Cost to use this service" },
+        "githubRepo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "description", "price", "githubRepo", "createdAt", "updatedAt"]
+    },
+    "Deposit": {
+      "title": "Deposit",
+      "description": "Record of a deposit transaction",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "success", "failed"] },
+        "reference": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "status", "reference", "createdAt", "updatedAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Record of a service usage (deduction from balance)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "amount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "serviceId", "amount", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "admins/{userId}": {
+      "schema": { "$ref": "#/entities/Admin" },
+      "description": "Admin privileges"
+    },
+    "services/{serviceId}": {
+      "schema": { "$ref": "#/entities/Service" },
+      "description": "Available tools & services"
+    },
+    "deposits/{depositId}": {
+      "schema": { "$ref": "#/entities/Deposit" },
+      "description": "Deposit transactions"
+    },
+    "transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Service usage ledger"
+    }
+  }
+}

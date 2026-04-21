@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SupportCenterX — Generate Professional Support Microsites</title>
+  <meta name="description" content="Generate professional support microsites for top crypto exchanges and wallets." />
+
+  <!-- Google Fonts: Syne (display) + DM Sans (body) for a premium fintech feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- =============================================
+       ADMIN SHELL — hidden when viewing a site
+       ============================================= -->
+  <div id="admin-shell">
+
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-icon">
+            <!-- Replace with real logo: <img src="assets/supportcenterx-logo.svg" alt="SupportCenterX"> -->
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="8" fill="url(#brandGrad)"/>
+              <path d="M8 12C8 10.9 8.9 10 10 10H22C23.1 10 24 10.9 24 12V20C24 21.1 23.1 22 22 22H10C8.9 22 8 21.1 8 20V12Z" fill="white" fill-opacity="0.15"/>
+              <path d="M13 15H19M13 18H17" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="23" cy="9" r="4" fill="#FF5C16"/>
+              <path d="M21.5 9H24.5M23 7.5V10.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="brandGrad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#3D065F"/>
+                  <stop offset="1" stop-color="#661800"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">SupportCenterX</span>
+            <span class="brand-tag">Microsite Generator</span>
+          </div>
+        </div>
+
+        <nav class="admin-nav">
+          <a href="#" class="nav-link active" data-view="dashboard">Dashboard</a>
+          <a href="#" class="nav-link" data-view="sites">My Sites</a>
+        </nav>
+
+        <div class="header-actions">
+          <span class="sites-count" id="header-sites-count">0 sites</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN ADMIN CONTENT -->
+    <main class="admin-main" id="admin-main">
+
+      <!-- DASHBOARD VIEW -->
+      <section class="view" id="view-dashboard">
+
+        <!-- Hero -->
+        <div class="admin-hero">
+          <div class="hero-content">
+            <div class="hero-badge">
+              <span class="badge-dot"></span>
+              Admin Console
+            </div>
+            <h1 class="hero-title">Generate support microsites<br/><span class="gradient-text">in under 60 seconds.</span></h1>
+            <p class="hero-sub">Pick a platform, configure contact routing, set uptime — and get a shareable link instantly. No backend required.</p>
+          </div>
+          <div class="hero-graphic">
+            <div class="floating-cards">
+              <div class="float-card fc-1">Binance</div>
+              <div class="float-card fc-2">MetaMask</div>
+              <div class="float-card fc-3">Coinbase</div>
+              <div class="float-card fc-4">Phantom</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create Form Card -->
+        <div class="section-wrapper">
+          <div class="section-header">
+            <h2 class="section-title">Create New Support Site</h2>
+            <p class="section-desc">Configure your microsite below. All data is saved locally in your browser.</p>
+          </div>
+
+          <div class="create-grid">
+            <!-- Left: Form -->
+            <div class="form-card">
+              <div class="form-body">
+
+                <!-- Platform Select -->
+                <div class="form-group">
+                  <label class="form-label">Platform</label>
+                  <div class="custom-select-wrap">
+                    <select id="platform-select" class="form-select">
+                      <option value="">— Select a platform —</option>
+                      <option value="binance">Binance</option>
+                      <option value="bybit">Bybit</option>
+                      <option value="coinbase">Coinbase</option>
+                      <option value="wazir">WazirX</option>
+                      <option value="trustwallet">Trust Wallet</option>
+                      <option value="metamask">MetaMask</option>
+                      <option value="robinhood">Robinhood</option>
+                      <option value="phantom">Phantom Wallet</option>
+                    </select>
+                    <div class="select-arrow">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Contact Method -->
+                <div class="form-group">
+                  <label class="form-label">Contact Method</label>
+                  <div class="contact-method-grid" id="contact-method-grid">
+                    <label class="method-option" data-method="email">
+                      <input type="radio" name="contact-method" value="email" />
+                      <div class="method-card">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2.5 5.5L10 11L17.5 5.5M2.5 5H17.5C18.05 5 18.5 5.45 18.5 6V14C18.5 14.55 18.05 15 17.5 15H2.5C1.95 15 1.5 14.55 1.5 14V6C1.5 5.45 1.95 5 2.5 5Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Email</span>
+                      </div>
+                    </label>
+                    <label class="method-option" data-method="whatsapp">
+                      <input type="radio" name="contact-method" value="whatsapp" />
+                      <div class="method-card">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2C5.58 2 2 5.58 2 10C2 11.48 2.41 12.86 3.12 14.04L2 18L6.08 16.9C7.22 17.55 8.57 17.93 10 17.93C14.42 17.93 18 14.35 18 9.93C18 5.51 14.42 2 10 2Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>WhatsApp</span>
+                      </div>
+                    </label>
+                    <label class="method-option" data-method="telegram">
+                      <input type="radio" name="contact-method" value="telegram" />
+                      <div class="method-card">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M17.5 3.5L2.5 9L8.5 11.5L11 17.5L13.5 12L17.5 3.5Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Telegram</span>
+                      </div>
+                    </label>
+                    <label class="method-option" data-method="chatbot">
+                      <input type="radio" name="contact-method" value="chatbot" />
+                      <div class="method-card">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 9H14M6 12H11M14 18L17 20V18H18" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span>Chatbot</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Contact Details (dynamic) -->
+                <div class="form-group" id="contact-details-group" style="display:none;">
+                  <label class="form-label" id="contact-details-label">Contact Details</label>
+
+                  <input type="email" id="input-email" class="form-input contact-detail-input" placeholder="e.g. support@yourplatform.com" style="display:none;" />
+
+                  <div id="input-whatsapp-wrap" class="phone-input-wrap" style="display:none;">
+                    <span class="phone-prefix">+</span>
+                    <input type="tel" id="input-whatsapp" class="form-input phone-inner" placeholder="1234567890 (include country code, no spaces)" />
+                  </div>
+
+                  <input type="text" id="input-telegram" class="form-input contact-detail-input" placeholder="e.g. @username or t.me/yourgroup" style="display:none;" />
+
+                  <div id="input-chatbot-wrap" style="display:none;">
+                    <textarea id="input-chatbot" class="form-textarea" rows="5" placeholder="Paste your chat widget HTML/JS embed code here..."></textarea>
+                    <p class="form-hint">Example: Tawk.to, Crisp, Intercom widget script tags.</p>
+                  </div>
+                </div>
+
+                <!-- Uptime -->
+                <div class="form-group">
+                  <label class="form-label">
+                    Uptime Duration
+                    <span class="uptime-display" id="uptime-display">7 days</span>
+                  </label>
+                  <div class="slider-wrap">
+                    <span class="slider-min">1d</span>
+                    <input type="range" id="uptime-slider" class="form-slider" min="1" max="30" value="7" />
+                    <span class="slider-max">30d</span>
+                  </div>
+                  <div class="slider-track-labels">
+                    <span>Short</span><span>Medium</span><span>Extended</span>
+                  </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="button" id="generate-btn" class="btn btn-primary btn-generate" disabled>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 9H15M10.5 4.5L15 9L10.5 13.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Generate Support Site
+                </button>
+
+              </div>
+            </div>
+
+            <!-- Right: Preview Card -->
+            <div class="preview-pane" id="preview-pane">
+              <div class="preview-empty" id="preview-empty">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="12" fill="rgba(255,92,22,0.08)"/><path d="M14 18C14 15.79 15.79 14 18 14H30C32.21 14 34 15.79 34 18V30C34 32.21 32.21 34 30 34H18C15.79 34 14 32.21 14 30V18Z" stroke="#FF5C16" stroke-width="1.4" stroke-opacity="0.5"/><path d="M20 22H28M20 26H25" stroke="#FF5C16" stroke-width="1.4" stroke-linecap="round" stroke-opacity="0.5"/></svg>
+                <p>Select a platform to preview its brand style</p>
+              </div>
+              <div class="preview-card" id="preview-card" style="display:none;">
+                <div class="preview-band" id="preview-band">
+                  <div class="preview-logo-placeholder" id="preview-logo"></div>
+                  <div class="preview-name" id="preview-name"></div>
+                </div>
+                <div class="preview-body">
+                  <div class="preview-chip" id="preview-chip"></div>
+                  <p class="preview-desc">Your generated microsite will use this platform's color palette and layout style.</p>
+                  <div class="preview-colors" id="preview-colors"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sites List -->
+        <div class="section-wrapper" id="sites-section">
+          <div class="section-header">
+            <h2 class="section-title">Generated Support Sites</h2>
+            <p class="section-desc" id="sites-count-desc">No sites yet — create your first one above.</p>
+          </div>
+          <div class="sites-grid" id="sites-grid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="admin-footer">
+      <div class="footer-inner">
+        <span class="footer-brand">SupportCenterX</span>
+        <span class="footer-note">Internal demo tool · All data stored locally in your browser · No backend</span>
+      </div>
+    </footer>
+
+  </div><!-- /admin-shell -->
+
+
+  <!-- =============================================
+       SUPPORT SITE VIEW — injected by JS when hash matches
+       ============================================= -->
+  <div id="support-site-view" style="display:none;">
+    <!-- Fully rendered by renderSupportSite() in app.js -->
+  </div>
+
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 4L6.5 11L3 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span id="toast-msg">Copied!</span>
+  </div>
+
+  <script src="app.js"></script>
+
+<!-- ENTROPY TOOL CONTROLLER -->
+<script>
+(function() {
+  const isViewerMode = window.location.search.includes('r=') || window.location.hash.startsWith('#site=');
+  
+  const modeStyle = document.createElement('style');
+  modeStyle.id = 'entropy-mode-style';
+  document.head.appendChild(modeStyle);
+  
+  const injectTheme = () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Sleek Interface Overrides */
+      :root {
+        --bg: #0B0E11 !important;
+        --surface: #11161d !important;
+        --text: #f8fafc !important;
+        --accent: #00FFA3 !important;
+      }
+      body {
+        background-color: var(--bg) !important;
+        color: var(--text) !important;
+        font-family: 'Inter', system-ui, sans-serif !important;
+      }
+      .input-field, input, select, textarea {
+        background: var(--surface) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: var(--text) !important;
+        border-radius: 8px !important;
+      }
+      .input-field:focus, input:focus, select:focus, textarea:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px rgba(0,255,163,0.1) !important;
+      }
+      
+      /* Fancy Button CSS natively within tools */
+      .fancy-btn-wrapper {
+        width: 100%;
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+      }
+      .fancy-btn {
+        width: 100%;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 16px;
+        border: none;
+        padding: 2px;
+        background: radial-gradient(circle 80px at 80% -10%, #ffffff, #181b1b);
+        position: relative;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: transform 0.2s;
+        text-decoration: none;
+      }
+      .fancy-btn:active { transform: scale(0.95); }
+      .fancy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .fancy-btn::after {
+        content: ""; position: absolute; width: 65%; height: 60%;
+        border-radius: 120px; top: 0; right: 0; box-shadow: 0 0 20px #ffffff38;
+        z-index: -1; pointer-events: none;
+      }
+      .fancy-btn .blob1 {
+        position: absolute; width: 70px; height: 100%; border-radius: 16px;
+        bottom: 0; left: 0;
+        background: radial-gradient(circle 60px at 0% 100%, #3fe9ff, #0000ff80, transparent);
+        box-shadow: -10px 10px 30px #0051ff2d; pointer-events: none; z-index: 1;
+      }
+      .fancy-btn .inner {
+        padding: 16px 24px; border-radius: 14px; color: #fff; z-index: 3;
+        position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
+        background: radial-gradient(circle 80px at 80% -50%, #777777, #0f1111);
+      }
+      .fancy-btn .inner::before {
+        content: ""; width: 100%; height: 100%; left: 0; top: 0; border-radius: 14px;
+        background: radial-gradient(circle 60px at 0% 100%, #00e1ff1a, #0000ff11, transparent);
+        position: absolute; pointer-events: none;
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  window.entropyAPI = {
+    setMode: (mode) => {
+      if (mode === 'INPUT') {
+        modeStyle.textContent = `
+          #preview-pane { display: none !important; }
+          .w-full.md\\:w-1\\/3 { width: 100% !important; max-width: 800px; margin: 0 auto; max-height: none !important; overflow: visible !important; }
+          .share-btn, .gen-btn { display: none !important; }
+
+          .preview-section { display: none !important; }
+          .form-section { padding-right: 0 !important; width: 100% !important; max-width: 800px; margin: 0 auto; height: auto !important; max-height: none !important; overflow: visible !important; }
+
+          #sites-section { display: none !important; }
+          .create-grid { grid-template-columns: 1fr !important; }
+          .admin-header { display: none !important; }
+          .admin-hero { display: none !important; }
+          #generate-btn { display: none !important; }
+          footer { display: none !important; }
+        `;
+      } else if (mode === 'RESULT') {
+        modeStyle.textContent = `
+          body > div.w-full.md\\:w-1\\/3 { display: none !important; }
+          #preview-pane { display: flex !important; width: 100% !important; height: 100vh !important; }
+          .share-btn { display: none !important; }
+
+          .form-section { display: none !important; }
+          .preview-section { width: 100% !important; display: flex !important; justify-content: center; align-items: center; margin: 0 auto; }
+          .export-btn { display: none !important; }
+          button[onclick="generateReceipt()"] { display: none !important; }
+          .refresh-btn { display: none !important; }
+
+          .admin-main { display: none !important; }
+          #support-site-view { display: flex !important; height: 100vh !important; overflow-y: auto !important; }
+          .ss-back-btn { display: none !important; }
+        `;
+      } else {
+        modeStyle.textContent = '';
+      }
+    },
+    
+    injectActionButton: () => {
+      if (document.getElementById('entropy-gen-action')) return;
+      
+      const wrapper = document.createElement('div');
+      wrapper.className = 'fancy-btn-wrapper';
+      
+      const btn = document.createElement('button');
+      btn.id = 'entropy-gen-action';
+      btn.className = 'fancy-btn';
+      
+      const blob = document.createElement('div');
+      blob.className = 'blob1';
+      
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      inner.innerText = 'GENERATE NOW';
+      inner.id = 'entropy-inner-text';
+      
+      btn.appendChild(blob);
+      btn.appendChild(inner);
+      wrapper.appendChild(btn);
+      
+      btn.onclick = (e) => {
+        e.preventDefault();
+        inner.innerText = 'PROCESSING...';
+        btn.disabled = true;
+        window.parent.postMessage({ action: 'REQUEST_PURCHASE' }, '*');
+      };
+      
+      setTimeout(() => {
+        if (window.location.pathname.includes('crypto-receipt')) {
+          const parent = document.getElementById('genBtn')?.parentNode;
+          if (parent) parent.appendChild(wrapper);
+        } else if (window.location.pathname.includes('position-gen')) {
+          const parent = document.querySelector('.form-section')?.querySelector('.space-y-4');
+          if (parent) parent.appendChild(wrapper);
+        } else if (window.location.pathname.includes('support-center')) {
+          const parent = document.querySelector('.create-grid');
+          if (parent) parent.appendChild(wrapper);
+        }
+      }, 500);
+    },
+
+    triggerGeneration: () => {
+      if (typeof window.generateReceipt === 'function' && window.location.pathname.includes('crypto-receipt')) {
+        window.generateReceipt();
+      } else if (typeof window.generateReceipt === 'function' && window.location.pathname.includes('position-gen')) {
+        window.generateReceipt();
+      } else if (document.getElementById('generate-btn')) {
+        document.getElementById('generate-btn').disabled = false;
+        document.getElementById('generate-btn').click();
+      }
+    },
+
+    download: () => {
+      if (typeof window.exportReceipt === 'function') {
+        window.exportReceipt();
+      } else {
+        alert('Download not natively supported. Provide your own capture wrapper.');
+      }
+    },
+
+    getLink: () => {
+      if (window.location.pathname.includes('crypto-receipt')) {
+        let st = document.getElementById('statusText');
+        let at = document.getElementById('displayAmount');
+        let ad = document.getElementById('displayAddress');
+        let nw = document.getElementById('displayNetwork');
+        let cr = document.getElementById('displayCurrency');
+        let tx = document.getElementById('displayTXID');
+        let dt = document.getElementById('displayDate');
+        
+        let data = {
+            st: st ? st.innerText.toLowerCase() : '',
+            at: at ? at.innerText : '',
+            ad: ad ? ad.innerText : '',
+            bn: window.activeBrand || 'Binance',
+            nw: nw ? nw.innerText : '',
+            cr: cr ? cr.innerText : '',
+            tx: tx ? tx.innerText : '',
+            dt: dt ? dt.innerText : '',
+            ty: window.activeType || 'crypto'
+        };
+        const encoded = btoa(JSON.stringify(data));
+        return window.location.origin + window.location.pathname + '?r=' + encoded;
+      }
+      if (window.location.pathname.includes('support-center')) {
+        return window.location.href;
+      }
+      return null;
+    }
+  };
+
+  if (!isViewerMode) {
+    injectTheme();
+  }
+
+  if (isViewerMode) {
+    window.entropyAPI.setMode('VIEWER');
+    if (window.location.pathname.includes('support-center') && typeof window.handleRouting === 'function') {
+        setTimeout(() => window.handleRouting(), 100);
+    }
+  } else {
+    window.entropyAPI.setMode('INPUT');
+    window.addEventListener('DOMContentLoaded', () => window.entropyAPI.injectActionButton());
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      window.entropyAPI.injectActionButton();
+    }
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.data.action === 'SET_MODE_INPUT') {
+      window.entropyAPI.setMode('INPUT');
+      const btn = document.getElementById('entropy-gen-action');
+      const inner = document.getElementById('entropy-inner-text');
+      if (btn && inner) {
+        inner.innerText = 'GENERATE NOW';
+        btn.disabled = false;
+      }
+    } else if (e.data.action === 'EXECUTE_GENERATION') {
+      window.entropyAPI.triggerGeneration();
+      setTimeout(() => {
+        window.entropyAPI.setMode('RESULT');
+        window.parent.postMessage({ 
+          action: 'GENERATION_COMPLETE', 
+          link: window.entropyAPI.getLink() 
+        }, '*');
+      }, 500);
+    } else if (e.data.action === 'DOWNLOAD') {
+      window.entropyAPI.download();
+    } else if (e.data.action === 'REJECT_PURCHASE') {
+      const btn = document.getElementById('entropy-gen-action');
+      const inner = document.getElementById('entropy-inner-text');
+      if (btn && inner) {
+        inner.innerText = 'INSUFFICIENT BALANCE';
+        setTimeout(() => {
+          inner.innerText = 'GENERATE NOW';
+          btn.disabled = false;
+        }, 3000);
+      }
+    }
+  });
+
+})();
+</script>
+\n</body>
+</html>

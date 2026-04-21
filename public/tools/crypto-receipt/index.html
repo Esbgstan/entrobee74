@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Builder Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Sora', sans-serif; background: #07090d; min-height: 100vh; }
+        code, .mono { font-family: 'IBM Plex Mono', monospace; }
+
+        /* ── Animations ── */
+        @keyframes pulse-soft { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.65;transform:scale(1.06)} }
+        @keyframes spin-slow { to{transform:rotate(360deg)} }
+        @keyframes fadein { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+        @keyframes slide-in { from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:translateX(0)} }
+
+        .animate-pending { animation: pulse-soft 2s ease-in-out infinite; }
+        .animate-spin-slow { animation: spin-slow 3s linear infinite; }
+        .fadein { animation: fadein .45s ease both; }
+        .shimmer-bar {
+            background: linear-gradient(90deg, #1a1d24 25%, #252830 50%, #1a1d24 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* ── Receipt card ── */
+        .receipt-card {
+            border-radius: 24px;
+            box-shadow: 0 32px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04);
+            transition: box-shadow .3s;
+        }
+        .receipt-card:hover { box-shadow: 0 40px 100px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.07); }
+
+        /* ── Control Panel ── */
+        .control-panel {
+            background: linear-gradient(145deg, #111318, #0d0f14);
+            border: 1px solid #1f2330;
+            border-radius: 20px;
+        }
+        .input-field {
+            background: #070a0f;
+            border: 1px solid #1e2330;
+            border-radius: 10px;
+            color: #d4d8e2;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-family: 'Sora', sans-serif;
+            outline: none;
+            width: 100%;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .input-field:focus { border-color: #3a4060; box-shadow: 0 0 0 3px rgba(80,100,200,.08); }
+        .input-field option { background: #0d0f14; }
+
+        /* ── Brand chip selector ── */
+        .brand-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+        .brand-chip {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 10px 6px; border-radius: 12px; cursor: pointer;
+            border: 1.5px solid #1a1d28; background: #0a0c12;
+            transition: all .18s; font-size: 10px; text-align: center; color: #7a8099;
+        }
+        .brand-chip:hover { border-color: #2e3450; color: #b0b8d0; background: #0f1118; }
+        .brand-chip.active { border-color: var(--brand-accent); background: var(--brand-bg); color: var(--brand-accent); box-shadow: 0 0 0 1px var(--brand-accent)22; }
+        .brand-chip img { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; }
+        .brand-chip .chip-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+
+        /* ── Generate btn ── */
+        .gen-btn {
+            width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px;
+            letter-spacing: .02em; cursor: pointer; transition: all .18s; border: none; outline: none;
+        }
+        .gen-btn:active { transform: scale(.97); }
+
+        /* ── Status badge ── */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 14px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+        }
+
+        /* ── Divider ── */
+        .divider { border: none; border-top: 1px solid #1e2330; margin: 0; }
+
+        /* ── Verified ribbon ── */
+        .ribbon {
+            position: absolute; top: 14px; right: -32px;
+            padding: 5px 44px; font-size: 9px; font-weight: 800; letter-spacing: .12em;
+            transform: rotate(45deg); pointer-events: none;
+        }
+
+        /* ── Share button ── */
+        .share-btn {
+            width: 100%; padding: 11px; border-radius: 12px; font-weight: 700; font-size: 13px;
+            background: linear-gradient(135deg, #1a237e, #283593); color: #90caf9;
+            border: 1px solid #283593; cursor: pointer; transition: all .18s;
+        }
+        .share-btn:hover { background: linear-gradient(135deg, #283593, #1565c0); }
+        .share-btn:active { transform: scale(.97); }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2f40; border-radius: 4px; }
+
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center gap-8">
+
+    <!-- ══ CONTROL PANEL ══ -->
+    <div id="controlPanel" class="control-panel no-print w-full max-w-lg p-6 fadein" style="animation-delay:.05s">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <h2 class="text-base font-bold text-white">Receipt Builder</h2>
+        </div>
+
+        <!-- Type toggle -->
+        <div class="flex gap-2 mb-5">
+            <button onclick="setType('crypto')" id="tabCrypto" class="tab-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-all active-tab">Crypto</button>
+            <button onclick="setType('bank')" id="tabBank" class="tab-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-all">Bank / App</button>
+        </div>
+
+        <!-- Brand picker -->
+        <div class="mb-5">
+            <label class="text-xs text-gray-500 mb-2 block uppercase tracking-widest">Select Platform</label>
+            <div id="cryptoBrands" class="brand-grid">
+                <div class="brand-chip active" onclick="selectBrand(this,'Binance')" data-brand="Binance">
+                    <img src="https://bin.bnbstatic.com/static/images/common/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#FCD535;color:#000;font-weight:800;font-size:9px">BNB</div>
+                    <span>Binance</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Coinbase')" data-brand="Coinbase">
+                    <img src="https://www.coinbase.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#0052FF;color:#fff;font-weight:800;font-size:9px">CB</div>
+                    <span>Coinbase</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'OKX')" data-brand="OKX">
+                    <img src="https://static.okx.com/cdn/assets/imgs/221/9E073F600D8C8D77.png" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#000;color:#fff;font-weight:800;font-size:9px">OKX</div>
+                    <span>OKX</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Kraken')" data-brand="Kraken">
+                    <img src="https://www.kraken.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#5741d9;color:#fff;font-weight:800;font-size:9px">KRK</div>
+                    <span>Kraken</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Bybit')" data-brand="Bybit">
+                    <img src="https://www.bybit.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#F7A600;color:#000;font-weight:800;font-size:9px">BBT</div>
+                    <span>Bybit</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'KuCoin')" data-brand="KuCoin">
+                    <img src="https://www.kucoin.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#23AF91;color:#fff;font-weight:800;font-size:9px">KCS</div>
+                    <span>KuCoin</span>
+                </div>
+            </div>
+            <div id="bankBrands" class="brand-grid hidden">
+                <div class="brand-chip active" onclick="selectBrand(this,'Cash App')" data-brand="Cash App">
+                    <img src="https://cash.app/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#00D632;color:#fff;font-weight:800;font-size:9px">$</div>
+                    <span>Cash App</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Zelle')" data-brand="Zelle">
+                    <img src="https://www.zellepay.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#6D1ED4;color:#fff;font-weight:800;font-size:9px">Z</div>
+                    <span>Zelle</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'PayPal')" data-brand="PayPal">
+                    <img src="https://www.paypal.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#003087;color:#fff;font-weight:800;font-size:9px">PP</div>
+                    <span>PayPal</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Chase')" data-brand="Chase">
+                    <img src="https://www.chase.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#117ACA;color:#fff;font-weight:800;font-size:9px">CH</div>
+                    <span>Chase</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Bank of America')" data-brand="Bank of America">
+                    <img src="https://www.bankofamerica.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#E31837;color:#fff;font-weight:800;font-size:9px">BoA</div>
+                    <span>BofA</span>
+                </div>
+                <div class="brand-chip" onclick="selectBrand(this,'Wells Fargo')" data-brand="Wells Fargo">
+                    <img src="https://www.wellsfargo.com/favicon.ico" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+                    <div class="chip-icon" style="display:none;background:#CC0000;color:#fff;font-weight:800;font-size:9px">WF</div>
+                    <span>Wells Fargo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crypto-specific fields -->
+        <div id="cryptoFields" class="space-y-3 mb-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">Coin / Token</label>
+                    <input id="coinName" type="text" placeholder="USDT" class="input-field">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">Network</label>
+                    <select id="networkSelect" class="input-field">
+                        <option value="TRX (TRC20)">TRC20</option>
+                        <option value="ETH (ERC20)">ERC20</option>
+                        <option value="BTC (Bitcoin)">Bitcoin</option>
+                        <option value="BNB Smart Chain">BEP20</option>
+                        <option value="Solana">Solana</option>
+                        <option value="Polygon">Polygon</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shared fields -->
+        <div class="space-y-3 mb-4">
+            <div>
+                <label class="text-xs text-gray-500 mb-1 block">Date & Time</label>
+                <input id="dateTimeInput" type="datetime-local" class="input-field">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block">Amount</label>
+                    <input id="amountInput" type="text" placeholder="10,000.00" class="input-field">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 mb-1 block" id="addrInputLabel">Address / Account</label>
+                    <input id="addressInput" type="text" placeholder="0x... / $cashtag" class="input-field">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div class="flex-1">
+                    <label class="text-xs text-gray-500 mb-1 block" id="txidInputLabel">TXID / Receipt ID</label>
+                    <input id="txidInput" type="text" placeholder="Auto or paste" class="input-field">
+                </div>
+                <div class="flex flex-col justify-end">
+                    <button onclick="generateRandomTXID()" class="input-field w-auto px-3 py-[10px] text-xs text-gray-400 hover:text-white cursor-pointer" style="width:52px">Auto</button>
+                </div>
+            </div>
+            <div>
+                <label class="text-xs text-gray-500 mb-1 block">Status</label>
+                <select id="statusSelect" class="input-field">
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                    <option value="canceled">Canceled</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="generateReceipt()" class="gen-btn mb-2" id="genBtn" style="background:linear-gradient(135deg,#FCD535,#f0a500);color:#000">
+            Generate Receipt
+        </button>
+        <button onclick="copyShortLink()" id="shareBtn" class="share-btn hidden">
+            📋 Copy Share Link
+        </button>
+    </div>
+
+    <!-- ══ RECEIPT CARD ══ -->
+    <div id="receiptContainer" class="receipt-card max-w-md w-full relative overflow-hidden fadein" style="animation-delay:.15s">
+
+        <!-- Ribbon -->
+        <div id="ribbon" class="ribbon text-black" style="background:#FCD535">VERIFIED</div>
+
+        <!-- Header -->
+        <div id="receiptHeader" class="flex justify-between items-center px-7 pt-7 pb-5">
+            <div class="flex items-center gap-3">
+                <div id="logoWrap" class="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden bg-white/10">
+                    <img id="mainLogo" src="" class="w-7 h-7 object-contain" onerror="this.style.display='none'">
+                    <span id="logoFallback" class="text-[10px] font-black hidden">BNB</span>
+                </div>
+                <div>
+                    <div id="brandName" class="font-bold text-[15px] text-white">Binance</div>
+                    <div id="brandSub" class="text-[10px] text-gray-500">Crypto Exchange</div>
+                </div>
+            </div>
+            <span id="displayDate" class="text-gray-500 text-[10px] mono">---</span>
+        </div>
+
+        <hr class="divider mx-7">
+
+        <!-- Status -->
+        <div class="text-center py-8 px-7">
+            <div id="statusIconWrap" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 animate-pending" style="background:rgba(252,213,53,.12)">
+                <svg id="statusSvg" class="w-10 h-10" fill="none" stroke="#FCD535" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div id="statusBadge" class="status-badge mx-auto mb-2" style="background:rgba(252,213,53,.12);color:#FCD535">
+                <span id="statusDot" class="w-1.5 h-1.5 rounded-full inline-block" style="background:#FCD535"></span>
+                <span id="statusText">Pending</span>
+            </div>
+            <p id="statusDesc" class="text-gray-500 text-xs mt-1">Processing request…</p>
+        </div>
+
+        <!-- Amount -->
+        <div class="mx-7 mb-5 rounded-2xl p-5" id="amountBox" style="background:rgba(252,213,53,.05);border:1px solid rgba(252,213,53,.1)">
+            <div class="text-xs text-gray-500 mb-1 uppercase tracking-widest">Amount</div>
+            <div class="flex items-end gap-2">
+                <span id="displayAmount" class="text-3xl font-bold text-white">0.00</span>
+                <span id="displayCurrency" class="text-sm text-gray-400 mb-1 font-semibold mono">USDT</span>
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="mx-7 space-y-4 mb-6">
+            <div>
+                <div class="text-[10px] text-gray-600 uppercase tracking-widest mb-1.5" id="addrLabel">Address</div>
+                <div id="displayAddress" class="bg-[#0f1118] border border-[#1a1f2e] rounded-xl p-3.5 mono text-[11px] text-gray-300 break-all leading-relaxed">---</div>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Method</span>
+                <span id="displayNetwork" class="text-gray-200 font-medium">---</span>
+            </div>
+            <div class="flex justify-between text-sm" id="feeRow">
+                <span class="text-gray-500">Fee</span>
+                <span id="displayFee" class="text-gray-200">—</span>
+            </div>
+        </div>
+
+        <hr class="divider mx-7">
+
+        <!-- TXID -->
+        <div class="mx-7 my-5">
+            <div class="text-[10px] text-gray-600 uppercase tracking-widest mb-1.5" id="txLabel">Transaction ID</div>
+            <div id="displayTXID" class="mono text-[10px] text-gray-600 break-all leading-relaxed">---</div>
+        </div>
+
+        <!-- Footer -->
+        <div id="receiptFooter" class="px-7 py-4 rounded-b-3xl" style="background:rgba(0,0,0,.25)">
+            <p class="text-[10px] text-gray-700 text-center">This is a private transaction receipt. Do not share with unauthorized parties.</p>
+        </div>
+
+        <!-- invisible cycle-status tap zone -->
+        <button onclick="cycleStatus()" class="opacity-0 absolute bottom-0 left-0 w-full h-12 cursor-default"></button>
+    </div>
+
+<style>
+    .tab-btn { background:#0f1118; color:#5a6080; border:1px solid #1a1f2e; }
+    .tab-btn.active-tab { background:#1a1d28; color:#d4d8e8; border-color:#2e3450; }
+</style>
+
+<script>
+/* ══════════════════════════════════════════════
+   BRAND CONFIGS  — accent, bg, logo, sub-label
+══════════════════════════════════════════════ */
+const BRANDS = {
+    // ─── Crypto ───
+    Binance: {
+        type:'crypto', accent:'#FCD535', bg:'rgba(252,213,53,.08)', cardBg:'#181a20',
+        logo:'https://bin.bnbstatic.com/static/images/common/favicon.ico',
+        sub:'Crypto Exchange', ribbon:'VERIFIED', ribbonBg:'#FCD535', ribbonColor:'#000',
+        currency:'USDT', method:'TRX (TRC20)',
+        addrLabel:'Wallet Address', txLabel:'Transaction Hash',
+        completedColor:'#22c55e', pendingColor:'#FCD535',
+        logoFallback:'BNB', logoFallbackBg:'#FCD535', logoFallbackColor:'#000'
+    },
+    Coinbase: {
+        type:'crypto', accent:'#0052FF', bg:'rgba(0,82,255,.08)', cardBg:'#0a0d14',
+        logo:'https://www.coinbase.com/favicon.ico',
+        sub:'Crypto Exchange', ribbon:'VERIFIED', ribbonBg:'#0052FF', ribbonColor:'#fff',
+        currency:'USDT', method:'ETH (ERC20)',
+        addrLabel:'Wallet Address', txLabel:'Transaction ID',
+        completedColor:'#22c55e', pendingColor:'#0052FF',
+        logoFallback:'CB', logoFallbackBg:'#0052FF', logoFallbackColor:'#fff'
+    },
+    OKX: {
+        type:'crypto', accent:'#ffffff', bg:'rgba(255,255,255,.06)', cardBg:'#0d0d0d',
+        logo:'https://static.okx.com/cdn/assets/imgs/221/9E073F600D8C8D77.png',
+        sub:'Crypto Exchange', ribbon:'VERIFIED', ribbonBg:'#fff', ribbonColor:'#000',
+        currency:'USDT', method:'TRX (TRC20)',
+        addrLabel:'Wallet Address', txLabel:'Transaction Hash',
+        completedColor:'#22c55e', pendingColor:'#e0e0e0',
+        logoFallback:'OKX', logoFallbackBg:'#fff', logoFallbackColor:'#000'
+    },
+    Kraken: {
+        type:'crypto', accent:'#5741d9', bg:'rgba(87,65,217,.1)', cardBg:'#100f1c',
+        logo:'https://www.kraken.com/favicon.ico',
+        sub:'Crypto Exchange', ribbon:'VERIFIED', ribbonBg:'#5741d9', ribbonColor:'#fff',
+        currency:'USDT', method:'ETH (ERC20)',
+        addrLabel:'Wallet Address', txLabel:'Transaction ID',
+        completedColor:'#22c55e', pendingColor:'#8b7ff5',
+        logoFallback:'KRK', logoFallbackBg:'#5741d9', logoFallbackColor:'#fff'
+    },
+    Bybit: {
+        type:'crypto', accent:'#F7A600', bg:'rgba(247,166,0,.08)', cardBg:'#13110a',
+        logo:'https://www.bybit.com/favicon.ico',
+        sub:'Crypto Exchange', ribbon:'VERIFIED', ribbonBg:'#F7A600', ribbonColor:'#000',
+        currency:'USDT', method:'TRX (TRC20)',
+        addrLabel:'Wallet Address', txLabel:'Transaction Hash',
+        completedColor:'#22c55e', pendingColor:'#F7A600',
+        logoFallback:'BBT', logoFallbackBg:'#F7A600', logoFallbackColor:'#000'
+    },
+    KuCoin: {
+        type:'crypto', accent:'#23AF91', bg:'rgba(35,175,145,.08)', cardBg:'#091410',
+        logo:'https://www.kucoin.com/favicon.ico',
+        sub:'Crypto Exchange', ribbon:'VERIFIED', ribbonBg:'#23AF91', ribbonColor:'#fff',
+        currency:'USDT', method:'TRX (TRC20)',
+        addrLabel:'Wallet Address', txLabel:'Transaction Hash',
+        completedColor:'#22c55e', pendingColor:'#23AF91',
+        logoFallback:'KCS', logoFallbackBg:'#23AF91', logoFallbackColor:'#fff'
+    },
+
+    // ─── Bank / App ───
+    'Cash App': {
+        type:'bank', accent:'#00D632', bg:'rgba(0,214,50,.08)', cardBg:'#0a1208',
+        logo:'https://cash.app/favicon.ico',
+        sub:'Cash App Pay', ribbon:'SUCCESS', ribbonBg:'#00D632', ribbonColor:'#fff',
+        currency:'USD', method:'Cash Balance',
+        addrLabel:'Cashtag / $', txLabel:'Web Receipt',
+        completedColor:'#00D632', pendingColor:'#00D632',
+        logoFallback:'$', logoFallbackBg:'#00D632', logoFallbackColor:'#fff'
+    },
+    Zelle: {
+        type:'bank', accent:'#6D1ED4', bg:'rgba(109,30,212,.1)', cardBg:'#0e0814',
+        logo:'https://www.zellepay.com/favicon.ico',
+        sub:'Zelle Network', ribbon:'SENT', ribbonBg:'#6D1ED4', ribbonColor:'#fff',
+        currency:'USD', method:'Zelle Transfer',
+        addrLabel:'Email / Phone', txLabel:'Reference Number',
+        completedColor:'#6D1ED4', pendingColor:'#a855f7',
+        logoFallback:'Z', logoFallbackBg:'#6D1ED4', logoFallbackColor:'#fff'
+    },
+    PayPal: {
+        type:'bank', accent:'#0070E0', bg:'rgba(0,112,224,.08)', cardBg:'#080d14',
+        logo:'https://www.paypal.com/favicon.ico',
+        sub:'PayPal Transfer', ribbon:'SENT', ribbonBg:'#0070E0', ribbonColor:'#fff',
+        currency:'USD', method:'PayPal Balance',
+        addrLabel:'Email / Account', txLabel:'Transaction ID',
+        completedColor:'#0070E0', pendingColor:'#4096ff',
+        logoFallback:'PP', logoFallbackBg:'#003087', logoFallbackColor:'#fff'
+    },
+    Chase: {
+        type:'bank', accent:'#117ACA', bg:'rgba(17,122,202,.08)', cardBg:'#080f16',
+        logo:'https://www.chase.com/favicon.ico',
+        sub:'J.P. Morgan Chase', ribbon:'SENT', ribbonBg:'#117ACA', ribbonColor:'#fff',
+        currency:'USD', method:'ACH Transfer',
+        addrLabel:'Recipient Account', txLabel:'Confirmation Number',
+        completedColor:'#117ACA', pendingColor:'#60b4f5',
+        logoFallback:'CH', logoFallbackBg:'#117ACA', logoFallbackColor:'#fff'
+    },
+    'Bank of America': {
+        type:'bank', accent:'#E31837', bg:'rgba(227,24,55,.08)', cardBg:'#130308',
+        logo:'https://www.bankofamerica.com/favicon.ico',
+        sub:'Bank of America', ribbon:'SENT', ribbonBg:'#E31837', ribbonColor:'#fff',
+        currency:'USD', method:'ACH Transfer',
+        addrLabel:'Recipient Account', txLabel:'Confirmation Number',
+        completedColor:'#E31837', pendingColor:'#f87171',
+        logoFallback:'BoA', logoFallbackBg:'#E31837', logoFallbackColor:'#fff'
+    },
+    'Wells Fargo': {
+        type:'bank', accent:'#CC0000', bg:'rgba(204,0,0,.08)', cardBg:'#130000',
+        logo:'https://www.wellsfargo.com/favicon.ico',
+        sub:'Wells Fargo Bank', ribbon:'SENT', ribbonBg:'#CC0000', ribbonColor:'#fff',
+        currency:'USD', method:'ACH Transfer',
+        addrLabel:'Recipient Account', txLabel:'Confirmation Number',
+        completedColor:'#CC0000', pendingColor:'#f87171',
+        logoFallback:'WF', logoFallbackBg:'#CC0000', logoFallbackColor:'#fff'
+    }
+};
+
+let activeBrand = 'Binance';
+let activeType = 'crypto';
+
+/* ── Helpers: URL-safe Unicode encode/decode ── */
+function safeEncode(obj) {
+    try {
+        const b64 = btoa(encodeURIComponent(JSON.stringify(obj)));
+        return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    } catch(e){ return null; }
+}
+function safeDecode(str) {
+    try {
+        let b64 = str.replace(/-/g,'+').replace(/_/g,'/');
+        while(b64.length%4) b64+='=';
+        return JSON.parse(decodeURIComponent(atob(b64)));
+    } catch(e){ return null; }
+}
+
+/* ── Type tab toggle ── */
+function setType(type) {
+    activeType = type;
+    document.getElementById('tabCrypto').classList.toggle('active-tab', type==='crypto');
+    document.getElementById('tabBank').classList.toggle('active-tab', type==='bank');
+    document.getElementById('cryptoBrands').classList.toggle('hidden', type!=='crypto');
+    document.getElementById('bankBrands').classList.toggle('hidden', type!=='bank');
+    document.getElementById('cryptoFields').classList.toggle('hidden', type!=='crypto');
+
+    // auto-select first in group
+    const firstChip = document.querySelector(`#${type==='crypto'?'crypto':'bank'}Brands .brand-chip`);
+    if(firstChip) selectBrand(firstChip, firstChip.dataset.brand);
+
+    if(type==='bank') {
+        document.getElementById('addrInputLabel').innerText = 'Email / Account / Cashtag';
+        document.getElementById('txidInputLabel').innerText = 'Receipt / Confirmation No.';
+    } else {
+        document.getElementById('addrInputLabel').innerText = 'Wallet Address';
+        document.getElementById('txidInputLabel').innerText = 'TXID / Transaction Hash';
+    }
+}
+
+/* ── Brand chip select ── */
+function selectBrand(el, brand) {
+    const cfg = BRANDS[brand];
+    if(!cfg) return;
+    activeBrand = brand;
+    // Update chips
+    const container = cfg.type==='crypto' ? document.getElementById('cryptoBrands') : document.getElementById('bankBrands');
+    container.querySelectorAll('.brand-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.documentElement.style.setProperty('--brand-accent', cfg.accent);
+    document.documentElement.style.setProperty('--brand-bg', cfg.bg);
+    // Update gen button to brand color
+    const btn = document.getElementById('genBtn');
+    btn.style.background = `linear-gradient(135deg,${cfg.accent},${cfg.accent}cc)`;
+    btn.style.color = cfg.logoFallbackColor === '#fff' ? '#fff' : '#000';
+}
+
+/* ── TXID generator ── */
+function generateRandomTXID() {
+    let res='';
+    if(activeType==='crypto'){
+        for(let i=0;i<64;i++) res+='abcdef0123456789'.charAt(Math.floor(Math.random()*16));
+    } else {
+        res='REF-'+Math.random().toString(36).substr(2,12).toUpperCase();
+    }
+    document.getElementById('txidInput').value=res;
+}
+
+/* ── Apply brand theme to receipt ── */
+function applyBrandTheme(brand, status) {
+    const cfg = BRANDS[brand];
+    if(!cfg) return;
+
+    // Card background
+    document.getElementById('receiptContainer').style.background = cfg.cardBg;
+    // Ribbon
+    const rib = document.getElementById('ribbon');
+    rib.innerText = cfg.ribbon;
+    rib.style.background = cfg.ribbonBg;
+    rib.style.color = cfg.ribbonColor;
+    // Logo
+    const img = document.getElementById('mainLogo');
+    const fallback = document.getElementById('logoFallback');
+    img.src = cfg.logo;
+    img.style.display = '';
+    fallback.style.display = 'none';
+    fallback.innerText = cfg.logoFallback;
+    fallback.style.color = cfg.logoFallbackColor;
+    document.getElementById('logoWrap').style.background = cfg.logoFallbackBg + '22';
+    img.onerror = () => {
+        img.style.display='none';
+        fallback.style.display='flex';
+        fallback.className = 'text-[10px] font-black flex items-center justify-center w-full h-full';
+    };
+    // Brand name + sub
+    document.getElementById('brandName').innerText = brand;
+    document.getElementById('brandSub').innerText = cfg.sub;
+    // Amount box accent
+    document.getElementById('amountBox').style.background = cfg.bg;
+    document.getElementById('amountBox').style.borderColor = cfg.accent+'22';
+    document.getElementById('displayCurrency').innerText = cfg.currency;
+    // Labels
+    document.getElementById('addrLabel').innerText = cfg.addrLabel;
+    document.getElementById('txLabel').innerText = cfg.txLabel;
+    // Network/method
+    if(cfg.type==='crypto') {
+        document.getElementById('displayNetwork').innerText = document.getElementById('networkSelect').value || cfg.method;
+        document.getElementById('displayFee').innerText = '1.00 '+document.getElementById('coinName').value;
+        document.getElementById('displayCurrency').innerText = document.getElementById('coinName').value || cfg.currency;
+    } else {
+        document.getElementById('displayNetwork').innerText = cfg.method;
+        document.getElementById('displayFee').innerText = '—';
+    }
+    // Dividers & subtle accents
+    document.querySelectorAll('.divider').forEach(d => d.style.borderColor = cfg.accent+'18');
+
+    updateStatusUI(status, cfg);
+}
+
+/* ── Status UI ── */
+function updateStatusUI(status, cfg) {
+    if(!cfg) cfg = BRANDS[activeBrand];
+    const iconWrap = document.getElementById('statusIconWrap');
+    const svg = document.getElementById('statusSvg');
+    const badge = document.getElementById('statusBadge');
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    const desc = document.getElementById('statusDesc');
+
+    iconWrap.classList.remove('animate-pending');
+
+    if(status==='completed') {
+        const c = cfg.completedColor;
+        iconWrap.style.background = c+'18'; iconWrap.style.border = `1px solid ${c}33`;
+        svg.setAttribute('stroke', c);
+        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+        badge.style.background = c+'18'; badge.style.color = c;
+        dot.style.background = c; text.innerText='Completed'; text.style.color=c;
+        desc.innerText='Transaction successful — funds on the way';
+    } else if(status==='canceled') {
+        iconWrap.style.background = '#ef444420'; iconWrap.style.border = '1px solid #ef444433';
+        svg.setAttribute('stroke','#ef4444');
+        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>';
+        badge.style.background='#ef444418'; badge.style.color='#ef4444';
+        dot.style.background='#ef4444'; text.innerText='Canceled'; text.style.color='#ef4444';
+        desc.innerText='Transaction declined or canceled';
+    } else {
+        const p = cfg.pendingColor;
+        iconWrap.style.background = p+'18'; iconWrap.style.border = `1px solid ${p}33`;
+        iconWrap.classList.add('animate-pending');
+        svg.setAttribute('stroke', p);
+        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+        badge.style.background = p+'18'; badge.style.color = p;
+        dot.style.background = p; text.innerText='Pending'; text.style.color=p;
+        desc.innerText='Processing request…';
+    }
+}
+
+/* ── Generate receipt ── */
+function generateReceipt() {
+    const brand = activeBrand;
+    const cfg = BRANDS[brand];
+    const date = document.getElementById('dateTimeInput').value;
+    if(date) document.getElementById('displayDate').innerText = new Date(date).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'});
+    document.getElementById('displayAmount').innerText = document.getElementById('amountInput').value || '0.00';
+    document.getElementById('displayAddress').innerText = document.getElementById('addressInput').value || '---';
+    document.getElementById('displayTXID').innerText = document.getElementById('txidInput').value || '---';
+    const status = document.getElementById('statusSelect').value;
+    applyBrandTheme(brand, status);
+    document.getElementById('shareBtn').classList.remove('hidden');
+}
+
+/* ── Cycle status on invisible tap ── */
+function cycleStatus() {
+    const cur = document.getElementById('statusText').innerText.toLowerCase();
+    const next = cur==='pending'?'completed':cur==='completed'?'canceled':'pending';
+    updateStatusUI(next);
+}
+
+/* ── Share link ── */
+function copyShortLink() {
+    const data = {
+        st: document.getElementById('statusText').innerText.toLowerCase(),
+        at: document.getElementById('displayAmount').innerText,
+        ad: document.getElementById('displayAddress').innerText,
+        bn: activeBrand,
+        nw: document.getElementById('displayNetwork').innerText,
+        cr: document.getElementById('displayCurrency').innerText,
+        tx: document.getElementById('displayTXID').innerText,
+        dt: document.getElementById('displayDate').innerText,
+        ty: activeType
+    };
+    const encoded = safeEncode(data);
+    if(!encoded){ alert('Failed to encode link'); return; }
+    const link = window.location.origin + window.location.pathname + '?r=' + encoded;
+    navigator.clipboard.writeText(link).then(()=>alert('Share link copied!')).catch(()=>prompt('Copy this link:', link));
+}
+
+/* ── Load from URL param ── */
+window.onload = () => {
+    // Pre-select Binance chip
+    const firstCrypto = document.querySelector('#cryptoBrands .brand-chip');
+    if(firstCrypto) {
+        document.documentElement.style.setProperty('--brand-accent', BRANDS['Binance'].accent);
+        document.documentElement.style.setProperty('--brand-bg', BRANDS['Binance'].bg);
+        document.getElementById('genBtn').style.background = `linear-gradient(135deg,#FCD535,#f0a500)`;
+        document.getElementById('genBtn').style.color = '#000';
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if(!params.has('r')) return;
+    const d = safeDecode(params.get('r'));
+    if(!d) return;
+
+    document.getElementById('controlPanel').classList.add('hidden');
+    activeBrand = d.bn || 'Binance';
+    activeType = d.ty || 'crypto';
+
+    document.getElementById('displayAmount').innerText = d.at||'---';
+    document.getElementById('displayAddress').innerText = d.ad||'---';
+    document.getElementById('displayNetwork').innerText = d.nw||'---';
+    document.getElementById('displayCurrency').innerText = d.cr||'---';
+    document.getElementById('displayTXID').innerText = d.tx||'---';
+    document.getElementById('displayDate').innerText = d.dt||'---';
+
+    applyBrandTheme(activeBrand, d.st||'pending');
+};
+</script>
+
+<!-- ENTROPY TOOL CONTROLLER -->
+<script>
+(function() {
+  const isViewerMode = window.location.search.includes('r=') || window.location.hash.startsWith('#site=');
+  
+  const modeStyle = document.createElement('style');
+  modeStyle.id = 'entropy-mode-style';
+  document.head.appendChild(modeStyle);
+  
+  const injectTheme = () => {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Sleek Interface Overrides */
+      :root {
+        --bg: #0B0E11 !important;
+        --surface: #11161d !important;
+        --text: #f8fafc !important;
+        --accent: #00FFA3 !important;
+      }
+      body {
+        background-color: var(--bg) !important;
+        color: var(--text) !important;
+        font-family: 'Inter', system-ui, sans-serif !important;
+      }
+      .input-field, input, select, textarea {
+        background: var(--surface) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        color: var(--text) !important;
+        border-radius: 8px !important;
+      }
+      .input-field:focus, input:focus, select:focus, textarea:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px rgba(0,255,163,0.1) !important;
+      }
+      
+      /* Fancy Button CSS natively within tools */
+      .fancy-btn-wrapper {
+        width: 100%;
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+      }
+      .fancy-btn {
+        width: 100%;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 16px;
+        border: none;
+        padding: 2px;
+        background: radial-gradient(circle 80px at 80% -10%, #ffffff, #181b1b);
+        position: relative;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: transform 0.2s;
+        text-decoration: none;
+      }
+      .fancy-btn:active { transform: scale(0.95); }
+      .fancy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+      .fancy-btn::after {
+        content: ""; position: absolute; width: 65%; height: 60%;
+        border-radius: 120px; top: 0; right: 0; box-shadow: 0 0 20px #ffffff38;
+        z-index: -1; pointer-events: none;
+      }
+      .fancy-btn .blob1 {
+        position: absolute; width: 70px; height: 100%; border-radius: 16px;
+        bottom: 0; left: 0;
+        background: radial-gradient(circle 60px at 0% 100%, #3fe9ff, #0000ff80, transparent);
+        box-shadow: -10px 10px 30px #0051ff2d; pointer-events: none; z-index: 1;
+      }
+      .fancy-btn .inner {
+        padding: 16px 24px; border-radius: 14px; color: #fff; z-index: 3;
+        position: relative; display: flex; align-items: center; justify-content: center; gap: 8px;
+        background: radial-gradient(circle 80px at 80% -50%, #777777, #0f1111);
+      }
+      .fancy-btn .inner::before {
+        content: ""; width: 100%; height: 100%; left: 0; top: 0; border-radius: 14px;
+        background: radial-gradient(circle 60px at 0% 100%, #00e1ff1a, #0000ff11, transparent);
+        position: absolute; pointer-events: none;
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  window.entropyAPI = {
+    setMode: (mode) => {
+      if (mode === 'INPUT') {
+        modeStyle.textContent = `
+          #preview-pane { display: none !important; }
+          .w-full.md\\:w-1\\/3 { width: 100% !important; max-width: 800px; margin: 0 auto; max-height: none !important; overflow: visible !important; }
+          .share-btn, .gen-btn { display: none !important; }
+
+          .preview-section { display: none !important; }
+          .form-section { padding-right: 0 !important; width: 100% !important; max-width: 800px; margin: 0 auto; height: auto !important; max-height: none !important; overflow: visible !important; }
+
+          #sites-section { display: none !important; }
+          .create-grid { grid-template-columns: 1fr !important; }
+          .admin-header { display: none !important; }
+          .admin-hero { display: none !important; }
+          #generate-btn { display: none !important; }
+          footer { display: none !important; }
+        `;
+      } else if (mode === 'RESULT') {
+        modeStyle.textContent = `
+          body > div.w-full.md\\:w-1\\/3 { display: none !important; }
+          #preview-pane { display: flex !important; width: 100% !important; height: 100vh !important; }
+          .share-btn { display: none !important; }
+
+          .form-section { display: none !important; }
+          .preview-section { width: 100% !important; display: flex !important; justify-content: center; align-items: center; margin: 0 auto; }
+          .export-btn { display: none !important; }
+          button[onclick="generateReceipt()"] { display: none !important; }
+          .refresh-btn { display: none !important; }
+
+          .admin-main { display: none !important; }
+          #support-site-view { display: flex !important; height: 100vh !important; overflow-y: auto !important; }
+          .ss-back-btn { display: none !important; }
+        `;
+      } else {
+        modeStyle.textContent = '';
+      }
+    },
+    
+    injectActionButton: () => {
+      if (document.getElementById('entropy-gen-action')) return;
+      
+      const wrapper = document.createElement('div');
+      wrapper.className = 'fancy-btn-wrapper';
+      
+      const btn = document.createElement('button');
+      btn.id = 'entropy-gen-action';
+      btn.className = 'fancy-btn';
+      
+      const blob = document.createElement('div');
+      blob.className = 'blob1';
+      
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      inner.innerText = 'GENERATE NOW';
+      inner.id = 'entropy-inner-text';
+      
+      btn.appendChild(blob);
+      btn.appendChild(inner);
+      wrapper.appendChild(btn);
+      
+      btn.onclick = (e) => {
+        e.preventDefault();
+        inner.innerText = 'PROCESSING...';
+        btn.disabled = true;
+        window.parent.postMessage({ action: 'REQUEST_PURCHASE' }, '*');
+      };
+      
+      setTimeout(() => {
+        if (window.location.pathname.includes('crypto-receipt')) {
+          const parent = document.getElementById('genBtn')?.parentNode;
+          if (parent) parent.appendChild(wrapper);
+        } else if (window.location.pathname.includes('position-gen')) {
+          const parent = document.querySelector('.form-section')?.querySelector('.space-y-4');
+          if (parent) parent.appendChild(wrapper);
+        } else if (window.location.pathname.includes('support-center')) {
+          const parent = document.querySelector('.create-grid');
+          if (parent) parent.appendChild(wrapper);
+        }
+      }, 500);
+    },
+
+    triggerGeneration: () => {
+      if (typeof window.generateReceipt === 'function' && window.location.pathname.includes('crypto-receipt')) {
+        window.generateReceipt();
+      } else if (typeof window.generateReceipt === 'function' && window.location.pathname.includes('position-gen')) {
+        window.generateReceipt();
+      } else if (document.getElementById('generate-btn')) {
+        document.getElementById('generate-btn').disabled = false;
+        document.getElementById('generate-btn').click();
+      }
+    },
+
+    download: () => {
+      if (typeof window.exportReceipt === 'function') {
+        window.exportReceipt();
+      } else {
+        alert('Download not natively supported. Provide your own capture wrapper.');
+      }
+    },
+
+    getLink: () => {
+      if (window.location.pathname.includes('crypto-receipt')) {
+        let st = document.getElementById('statusText');
+        let at = document.getElementById('displayAmount');
+        let ad = document.getElementById('displayAddress');
+        let nw = document.getElementById('displayNetwork');
+        let cr = document.getElementById('displayCurrency');
+        let tx = document.getElementById('displayTXID');
+        let dt = document.getElementById('displayDate');
+        
+        let data = {
+            st: st ? st.innerText.toLowerCase() : '',
+            at: at ? at.innerText : '',
+            ad: ad ? ad.innerText : '',
+            bn: window.activeBrand || 'Binance',
+            nw: nw ? nw.innerText : '',
+            cr: cr ? cr.innerText : '',
+            tx: tx ? tx.innerText : '',
+            dt: dt ? dt.innerText : '',
+            ty: window.activeType || 'crypto'
+        };
+        const encoded = btoa(JSON.stringify(data));
+        return window.location.origin + window.location.pathname + '?r=' + encoded;
+      }
+      if (window.location.pathname.includes('support-center')) {
+        return window.location.href;
+      }
+      return null;
+    }
+  };
+
+  if (!isViewerMode) {
+    injectTheme();
+  }
+
+  if (isViewerMode) {
+    window.entropyAPI.setMode('VIEWER');
+    if (window.location.pathname.includes('support-center') && typeof window.handleRouting === 'function') {
+        setTimeout(() => window.handleRouting(), 100);
+    }
+  } else {
+    window.entropyAPI.setMode('INPUT');
+    window.addEventListener('DOMContentLoaded', () => window.entropyAPI.injectActionButton());
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      window.entropyAPI.injectActionButton();
+    }
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.data.action === 'SET_MODE_INPUT') {
+      window.entropyAPI.setMode('INPUT');
+      const btn = document.getElementById('entropy-gen-action');
+      const inner = document.getElementById('entropy-inner-text');
+      if (btn && inner) {
+        inner.innerText = 'GENERATE NOW';
+        btn.disabled = false;
+      }
+    } else if (e.data.action === 'EXECUTE_GENERATION') {
+      window.entropyAPI.triggerGeneration();
+      setTimeout(() => {
+        window.entropyAPI.setMode('RESULT');
+        window.parent.postMessage({ 
+          action: 'GENERATION_COMPLETE', 
+          link: window.entropyAPI.getLink() 
+        }, '*');
+      }, 500);
+    } else if (e.data.action === 'DOWNLOAD') {
+      window.entropyAPI.download();
+    } else if (e.data.action === 'REJECT_PURCHASE') {
+      const btn = document.getElementById('entropy-gen-action');
+      const inner = document.getElementById('entropy-inner-text');
+      if (btn && inner) {
+        inner.innerText = 'INSUFFICIENT BALANCE';
+        setTimeout(() => {
+          inner.innerText = 'GENERATE NOW';
+          btn.disabled = false;
+        }, 3000);
+      }
+    }
+  });
+
+})();
+</script>
+\n</body>
+                        </html>

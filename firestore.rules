@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Auth Helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // User Profile Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['userId', 'email', 'balance', 'createdAt', 'updatedAt']) 
+        && data.keys().size() == 5
+        && data.userId is string && data.userId.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && data.balance is number
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidUserUpdate(data) {
+      return data.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && incoming().userId == request.auth.uid
+        && incoming().email == request.auth.token.email
+        && incoming().balance == 0
+        && isValidUser(incoming());
+        
+      allow update: if (isAdmin() && isValidUserUpdate(incoming())) || (
+        isOwner(userId)
+        && isValidUserUpdate(incoming())
+        && incoming().diff(existing()).affectedKeys().hasAny(['updatedAt', 'balance']) 
+        && incoming().balance <= existing().balance
+      );
+      // Balance is strictly updated by the backend server, NOT client.
+    }
+
+    match /admins/{userId} {
+      // Allow read so isAdmin() function works and clients can check
+      // No client is allowed to write an admin. Bootstrapped from Firebase Console or backend only.
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Service Tool Definitions
+    function isValidService(data) {
+      return data.keys().hasAll(['name', 'description', 'price', 'githubRepo', 'createdAt', 'updatedAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 128
+        && data.description is string && data.description.size() <= 1024
+        && data.price is number && data.price >= 0
+        && data.githubRepo is string && data.githubRepo.size() <= 256
+        && (data.createdAt == request.time || data.createdAt == existing().createdAt)
+        && data.updatedAt == request.time;
+    }
+
+    match /services/{serviceId} {
+      allow read: if isSignedIn(); // All signed-in users can view services
+      
+      allow create: if isAdmin()
+        && isValidId(serviceId)
+        && incoming().createdAt == request.time
+        && isValidService(incoming());
+        
+      allow update: if isAdmin()
+        && incoming().diff(existing()).affectedKeys().hasAny(['name', 'description', 'price', 'githubRepo', 'updatedAt'])
+        && isValidService(incoming());
+        
+      allow delete: if isAdmin();
+    }
+
+    // Deposit Transactions (Client creates pending, Backend updates to success)
+    function isValidDepositCreate(data) {
+      return data.keys().hasAll(['userId', 'amount', 'status', 'reference', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 6
+        && data.userId is string && data.userId == request.auth.uid
+        && data.amount is number && data.amount > 0
+        && data.status == 'pending'
+        && data.reference is string && data.reference.size() <= 128
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    match /deposits/{depositId} {
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      
+      allow create: if isOwner(incoming().userId)
+        && isValidId(depositId)
+        && isValidDepositCreate(incoming());
+        
+      // Client cannot update it. Only server sets it to success
+      allow update, delete: if false;
+    }
+
+    // Transactions ledgers (Users consuming services)
+    // Server creates these. Client can only read.
+    match /transactions/{transactionId} {
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      allow list: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isOwner(incoming().userId)
+        && isValidId(transactionId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().amount is number
+        && incoming().serviceId is string;
+      allow update, delete: if false; 
+    }
+  }
+}

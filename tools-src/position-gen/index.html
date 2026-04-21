@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Receipt Generator Pro</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-color: #e0e0e0;
+            --input-bg: #ffffff;
+            --card-bg: #ffffff;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.3);
+            --buy-color: #3b82f6;
+            --sell-color: #ef4444;
+            --profit-color: #10b981;
+            --loss-color: #ef4444;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-gradient-start: #4c1d95;
+            --bg-gradient-end: #1e1b4b;
+            --text-primary: #f5f5f5;
+            --text-secondary: #d4d4d4;
+            --text-tertiary: #a3a3a3;
+            --border-color: #404040;
+            --input-bg: #2d2d2d;
+            --card-bg: #252525;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-lg: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .app-header {
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 968px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section, .receipt-section {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px var(--shadow-lg);
+            transition: all 0.3s ease;
+        }
+
+        h1, h2 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .multi-select-wrapper {
+            position: relative;
+        }
+
+        .multi-select-display {
+            min-height: 48px;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .multi-select-display:hover {
+            border-color: #667eea;
+        }
+
+        .selected-tag {
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .selected-tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .multi-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px var(--shadow);
+        }
+
+        .multi-select-dropdown.active {
+            display: block;
+        }
+
+        .dropdown-section {
+            padding: 10px 0;
+        }
+
+        .dropdown-section-title {
+            padding: 8px 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            background: var(--bg-secondary);
+        }
+
+        .dropdown-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dropdown-option:hover {
+            background: var(--bg-secondary);
+        }
+
+        .dropdown-option input[type="checkbox"] {
+            width: auto;
+        }
+
+        .price-indicator {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-left: auto;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.refresh-btn {
+            background: #10b981;
+        }
+
+        button.refresh-btn:hover {
+            background: #059669;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Receipt Styles */
+        .receipt {
+            background: var(--card-bg);
+            min-height: 400px;
+            color: var(--text-primary);
+        }
+
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .receipt-nav {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .receipt-nav span.active {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .trade-item {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .trade-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .trade-symbol {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+
+        .trade-type {
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .trade-type.sell {
+            color: var(--sell-color);
+        }
+
+        .trade-type.buy {
+            color: var(--buy-color);
+        }
+
+        .trade-profit {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .trade-profit.positive {
+            color: var(--profit-color);
+        }
+
+        .trade-profit.negative {
+            color: var(--loss-color);
+        }
+
+        .trade-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .summary {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .summary-row.total {
+            font-weight: 700;
+            font-size: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 8px;
+        }
+
+        .export-btn {
+            background: #8b5cf6;
+        }
+
+        .export-btn:hover {
+            background: #7c3aed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-tertiary);
+        }
+
+        .spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-banner {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1 style="margin: 0;">📊 Trading Receipt Generator Pro</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">Dark Mode</span>
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="form-section">
+            <div class="info-banner">
+                💡 Select trading pairs, enter your total profit, and let the app distribute it automatically!
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Selected Pairs</div>
+                    <div class="stat-value" id="selectedCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Profit</div>
+                    <div class="stat-value" id="totalProfitDisplay">$0</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Select Trading Pairs (Multi-Select)</label>
+                <div class="multi-select-wrapper">
+                    <div class="multi-select-display" id="multiSelectDisplay" onclick="toggleDropdown()">
+                        <span style="color: var(--text-tertiary);">Click to select pairs...</span>
+                    </div>
+                    <div class="multi-select-dropdown" id="multiSelectDropdown">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Total Profit (USD)</label>
+                <input type="number" id="totalProfit" value="10000" step="100" 
+                       oninput="updateProfitDisplay()" placeholder="Enter total profit">
+            </div>
+
+            <div class="form-group">
+                <label>Commission (USD)</label>
+                <input type="number" id="commission" value="-20.00" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <label>Number of Trades per Pair</label>
+                <input type="number" id="tradesPerPair" value="2" min="1" max="5" step="1">
+            </div>
+
+            <button class="refresh-btn" onclick="fetchPricesAndGenerate()">
+                🔄 Refresh Prices & Generate Receipt
+            </button>
+            
+            <button onclick="generateReceipt()">⚡ Generate Receipt (Use Cached Prices)</button>
+        </div>
+
+        <div class="receipt-section">
+            <h2>Live Preview</h2>
+            <div class="receipt" id="receipt">
+                <div class="receipt-header">
+                    <div style="font-size: 20px;">☰</div>
+                    <div class="receipt-nav">
+                        <span class="active">Positions</span>
+                        <span>Orders</span>
+                        <span>Deals</span>
+                    </div>
+                    <div style="font-size: 20px;">🕐</div>
+                </div>
+                <div id="receiptContent">
+                    <p style="text-align: center; color: var(--text-tertiary); padding: 40px 0;">
+                        Select trading pairs and click "Generate Receipt"
+                    </p>
+                </div>
+            </div>
+            <button class="export-btn" onclick="exportReceipt()">📥 Download as Image</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // Trading assets data
+        const ASSETS = {
+            forex: [
+                { symbol: 'EURUSD', name: 'EUR/USD' },
+                { symbol: 'GBPUSD', name: 'GBP/USD' },
+                { symbol: 'USDJPY', name: 'USD/JPY' },
+                { symbol: 'AUDUSD', name: 'AUD/USD' },
+                { symbol: 'USDCAD', name: 'USD/CAD' },
+                { symbol: 'NZDUSD', name: 'NZD/USD' },
+                { symbol: 'EURGBP', name: 'EUR/GBP' },
+                { symbol: 'EURJPY', name: 'EUR/JPY' },
+                { symbol: 'GBPJPY', name: 'GBP/JPY' },
+                { symbol: 'XAUUSD', name: 'Gold/USD' },
+                { symbol: 'XAGUSD', name: 'Silver/USD' }
+            ],
+            crypto: [
+                { symbol: 'BTCUSD', name: 'Bitcoin' },
+                { symbol: 'ETHUSD', name: 'Ethereum' },
+                { symbol: 'BNBUSD', name: 'Binance Coin' },
+                { symbol: 'SOLUSD', name: 'Solana' },
+                { symbol: 'XRPUSD', name: 'Ripple' },
+                { symbol: 'ADAUSD', name: 'Cardano' },
+                { symbol: 'DOGUSD', name: 'Dogecoin' },
+                { symbol: 'MATICUSD', name: 'Polygon' },
+                { symbol: 'DOTUSD', name: 'Polkadot' },
+                { symbol: 'AVAXUSD', name: 'Avalanche' }
+            ]
+        };
+
+        let selectedPairs = [];
+        let priceCache = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDropdown();
+            loadTheme();
+            updateProfitDisplay();
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.multi-select-wrapper')) {
+                document.getElementById('multiSelectDropdown').classList.remove('active');
+            }
+        });
+
+        function initializeDropdown() {
+            const dropdown = document.getElementById('multiSelectDropdown');
+            let html = '';
+
+            // Forex section
+            html += '<div class="dropdown-section">';
+            html += '<div class="dropdown-section-title">💱 Forex Pairs</div>';
+            ASSETS.forex.forEach(asset => {
+                html += `
+                    <div class="dropdown-option" onclick="togglePair('${asset.symbol}', event)">
+                        <input type="checkbox" id="check_${asset.symbol}" onclick="event.stopPropagation(); togglePair('${asset.symbol}', event)">
+                        <label for="check_${asset.symbol}" style="cursor: pointer; flex: 1;">${asset.name}</label>
+                        <span class="price-indicator" id="price_${asset.symbol}">--</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            // Crypto section
+            html += '<div class="dropdown-section">';
+            html += '<div class="dropdown-section-title">₿ Cryptocurrencies</div>';
+            ASSETS.crypto.forEach(asset => {
+                html += `
+                    <div class="dropdown-option" onclick="togglePair('${asset.symbol}', event)">
+                        <input type="checkbox" id="check_${asset.symbol}" onclick="event.stopPropagation(); togglePair('${asset.symbol}', event)">
+                        <label for="check_${asset.symbol}" style="cursor: pointer; flex: 1;">${asset.name}</label>
+                        <span class="price-indicator" id="price_${asset.symbol}">--</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            dropdown.innerHTML = html;
+        }
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById('multiSelectDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function togglePair(symbol, event) {
+            event.stopPropagation();
+            const checkbox = document.getElementById(`check_${symbol}`);
+            
+            if (selectedPairs.includes(symbol)) {
+                selectedPairs = selectedPairs.filter(s => s !== symbol);
+                checkbox.checked = false;
+            } else {
+                selectedPairs.push(symbol);
+                checkbox.checked = true;
+            }
+
+            updateSelectedDisplay();
+        }
+
+        function removePair(symbol) {
+            selectedPairs = selectedPairs.filter(s => s !== symbol);
+            document.getElementById(`check_${symbol}`).checked = false;
+            updateSelectedDisplay();
+        }
+
+        function updateSelectedDisplay() {
+            const display = document.getElementById('multiSelectDisplay');
+            document.getElementById('selectedCount').textContent = selectedPairs.length;
+
+            if (selectedPairs.length === 0) {
+                display.innerHTML = '<span style="color: var(--text-tertiary);">Click to select pairs...</span>';
+            } else {
+                display.innerHTML = selectedPairs.map(symbol => {
+                    const asset = [...ASSETS.forex, ...ASSETS.crypto].find(a => a.symbol === symbol);
+                    return `
+                        <div class="selected-tag">
+                            ${asset.name}
+                            <span class="remove" onclick="event.stopPropagation(); removePair('${symbol}')">×</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function updateProfitDisplay() {
+            const profit = parseFloat(document.getElementById('totalProfit').value) || 0;
+            document.getElementById('totalProfitDisplay').textContent = '$' + profit.toLocaleString();
+        }
+
+        async function fetchPricesAndGenerate() {
+            if (selectedPairs.length === 0) {
+                alert('Please select at least one trading pair!');
+                return;
+            }
+
+            const receiptContent = document.getElementById('receiptContent');
+            receiptContent.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top: 15px;">Fetching real-time prices...</p></div>';
+
+            try {
+                // Fetch prices for all selected pairs
+                for (const symbol of selectedPairs) {
+                    const price = await fetchRealPrice(symbol);
+                    priceCache[symbol] = price;
+                    
+                    // Update price indicator
+                    const priceElement = document.getElementById(`price_${symbol}`);
+                    if (priceElement) {
+                        priceElement.textContent = '$' + price.toFixed(2);
+                    }
+                }
+
+                // Generate receipt with fetched prices
+                generateReceipt();
+            } catch (error) {
+                console.error('Error fetching prices:', error);
+                receiptContent.innerHTML = '<p style="text-align: center; color: var(--sell-color); padding: 40px 20px;">Failed to fetch prices. Using simulated data...</p>';
+                
+                // Use simulated prices as fallback
+                generateReceipt();
+            }
+        }
+
+        async function fetchRealPrice(symbol) {
+            // Simulate API call with realistic prices
+            // In production, you would call actual APIs like:
+            // - CoinGecko for crypto
+            // - Alpha Vantage, Twelve Data, or FMP for forex
+            
+            await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+
+            const basePrice = {
+                'EURUSD': 1.0850,
+                'GBPUSD': 1.2650,
+                'USDJPY': 149.50,
+                'AUDUSD': 0.6550,
+                'USDCAD': 1.3650,
+                'NZDUSD': 0.6050,
+                'EURGBP': 0.8580,
+                'EURJPY': 162.20,
+                'GBPJPY': 189.00,
+                'XAUUSD': 2340.50,
+                'XAGUSD': 27.85,
+                'BTCUSD': 67500,
+                'ETHUSD': 3450,
+                'BNBUSD': 585,
+                'SOLUSD': 145,
+                'XRPUSD': 0.52,
+                'ADAUSD': 0.45,
+                'DOGUSD': 0.15,
+                'MATICUSD': 0.85,
+                'DOTUSD': 6.75,
+                'AVAXUSD': 36.50
+            }[symbol] || 100;
+
+            // Add some random variation (±0.5%)
+            const variation = 1 + (Math.random() - 0.5) * 0.01;
+            return basePrice * variation;
+        }
+
+        function generateReceipt() {
+            if (selectedPairs.length === 0) {
+                alert('Please select at least one trading pair!');
+                return;
+            }
+
+            const totalProfit = parseFloat(document.getElementById('totalProfit').value) || 0;
+            const commission = parseFloat(document.getElementById('commission').value) || 0;
+            const tradesPerPair = parseInt(document.getElementById('tradesPerPair').value) || 2;
+
+            // Generate trades for each selected pair
+            const trades = [];
+            const profitPerPair = totalProfit / selectedPairs.length;
+
+            selectedPairs.forEach(symbol => {
+                const basePrice = priceCache[symbol] || (Math.random() * 1000 + 100);
+                
+                for (let i = 0; i < tradesPerPair; i++) {
+                    const isBuy = Math.random() > 0.5;
+                    const profitForTrade = profitPerPair / tradesPerPair;
+                    
+                    // Calculate realistic entry and exit prices
+                    const priceVariation = basePrice * (0.001 + Math.random() * 0.004); // 0.1-0.5% movement
+                    const quantity = Math.floor(Math.random() * 3) + 1;
+                    
+                    let entryPrice, exitPrice;
+                    if (isBuy) {
+                        entryPrice = basePrice - (Math.random() * priceVariation);
+                        exitPrice = entryPrice + (profitForTrade / (quantity * 100));
+                    } else {
+                        entryPrice = basePrice + (Math.random() * priceVariation);
+                        exitPrice = entryPrice - (profitForTrade / (quantity * 100));
+                    }
+
+                    // Create timestamp (random time in the last 24 hours)
+                    const timestamp = new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000);
+
+                    trades.push({
+                        symbol: symbol,
+                        type: isBuy ? 'buy' : 'sell',
+                        quantity: quantity,
+                        entryPrice: entryPrice,
+                        exitPrice: exitPrice,
+                        timestamp: timestamp,
+                        profit: profitForTrade
+                    });
+                }
+            });
+
+            // Sort trades by timestamp
+            trades.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Render receipt
+            renderReceipt(trades, totalProfit, commission);
+        }
+
+        function renderReceipt(trades, totalProfit, commission) {
+            const tradesHTML = trades.map(trade => {
+                const asset = [...ASSETS.forex, ...ASSETS.crypto].find(a => a.symbol === trade.symbol);
+                const profit = trade.profit;
+                const profitClass = profit >= 0 ? 'positive' : 'negative';
+                const typeClass = trade.type === 'buy' ? 'buy' : 'sell';
+
+                return `
+                    <div class="trade-item">
+                        <div class="trade-item-header">
+                            <div>
+                                <span class="trade-symbol">${asset.name}</span>
+                                <span class="trade-type ${typeClass}">${trade.type} ${trade.quantity}</span>
+                            </div>
+                            <div class="trade-profit ${profitClass}">${profit >= 0 ? '+' : ''}${profit.toFixed(2)}</div>
+                        </div>
+                        <div class="trade-details">
+                            <span>${trade.entryPrice.toFixed(2)} → ${trade.exitPrice.toFixed(2)}</span>
+                            <span>${formatDateTime(trade.timestamp)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const balance = totalProfit + commission;
+
+            const summaryHTML = `
+                <div class="summary">
+                    <div class="summary-row">
+                        <span>Deposit</span>
+                        <span>0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Profit</span>
+                        <span>${totalProfit.toFixed(2)}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Swap</span>
+                        <span>0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Commission</span>
+                        <span>${commission.toFixed(2)}</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Account Balance</span>
+                        <span>${balance.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('receiptContent').innerHTML = tradesHTML + summaryHTML;
+        }
+
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        function exportReceipt() {
+            const receipt = document.getElementById('receipt');
+            
+            html2canvas(receipt, {
+                scale: 2,
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim(),
+                logging: false
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trading-receipt-${Date.now()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            });
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            updateThemeButton(newTheme);
+        }
+
+        function updateThemeButton(theme) {
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+            
+            if (theme === 'dark') {
+                icon.textContent = '☀️';
+                text.textContent = 'Light Mode';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = 'Dark Mode';
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeButton(savedTheme);
+        }
+    </script>
+</body>
+    </html>
